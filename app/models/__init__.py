@@ -1,0 +1,9 @@
+from flask_sqlalchemy import SQLAlchemy
+db = SQLAlchemy()
+
+from app.models import User
+from app.models import Classroom
+from app.models import Lecture
+from app.models import LectureMaterial
+from app.models import LectureSubtopic
+

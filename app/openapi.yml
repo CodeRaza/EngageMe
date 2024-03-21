@@ -1,0 +1,184 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Incident Management
+
+servers:
+  - url: http://localhost
+
+paths:
+  /getTickets:
+    get:
+      tags:
+        - Tickets
+      description: Returns a list of Tickets with SLA information
+
+      parameters:
+        - in: query
+          name: search
+          required: false
+          description: Filter Ticket records based on value of this parameter
+          schema:
+            type: string
+            
+      responses:
+        '200':
+          description: Successfully returned a list of Tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    source_incident_no:
+                      type: string
+                      format: datetime
+                      example: "2022-10-02T01:04:39"
+                    internal_incident_no:
+                      type: string
+                      example: 321
+                    status:
+                      type: string
+                      example: close
+                    source_time:
+                      type: string
+                      format: datetime
+                      example: "2022-09-25T08:52:15"
+                    opening_time:
+                      type: string
+                      format: datetime
+                      example: "2022-09-25T09:52:15"
+                    fault_description:
+                      type: string
+                      example: "test fault"
+                    resolution:
+                      type: string
+                      example: "test resolution"
+                    closing_time:
+                      type: string
+                      format: datetime
+                      example: "2022-09-25T12:52:15"
+                    time_to_resolve:
+                      type: string
+                      format: datetime
+                      example: "2022-09-25T12:52:15"
+                    time_to_respond:
+                      type: string
+                      format: datetime
+                      example: "2022-09-25T12:52:15"
+                    time_to_resolve_sla:
+                      type: boolean
+                      example: true
+                    time_to_respond_sla:
+                      type: boolean
+                      example: true
+
+  /ticketStats:
+    get:
+      tags:
+        - Tickets
+      description: Returns Ticket Stats
+            
+      responses:
+        '200':
+          description: Successfully returned a list of Ticket stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    open:
+                      type: integer
+                      example: 2
+                    closed:
+                      type: integer
+                      example: 5
+                    in_progress:
+                      type: integer
+                      example: 1
+                    in_queue:
+                      type: integer
+                      example: 5
+                    on_hold_noc:
+                      type: integer
+                      example: 0
+                    on_hold_poc:
+                      type: integer
+                      example: 0
+                    tickets_created_today:
+                      type: integer
+                      example: 1
+                    tickets_closed_today:
+                      type: integer
+                      example: 3
+                    
+  
+  /getTicketsReport:
+    get:
+      tags:
+        - Reports
+      description: Returns a list of Tickets based on filters provided
+
+      parameters:
+        - in: query
+          name: search
+          required: false
+          description: Filter Ticket records based on value of this parameter
+          schema:
+            type: string
+            
+      responses:
+        '200':
+          description: Successfully returned a list of Tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    source_incident_no:
+                      type: string
+                      format: datetime
+                      example: "2022-10-02T01:04:39"
+                    internal_incident_no:
+                      type: string
+                      example: 321
+                    status:
+                      type: string
+                      example: close
+                    source_time:
+                      type: string
+                      format: datetime
+                      example: "2022-09-25T08:52:15"
+                    opening_time:
+                      type: string
+                      format: datetime
+                      example: "2022-09-25T09:52:15"
+                    fault_description:
+                      type: string
+                      example: "test fault"
+                    resolution:
+                      type: string
+                      example: "test resolution"
+                    closing_time:
+                      type: string
+                      format: datetime
+                      example: "2022-09-25T12:52:15"
+                    time_to_resolve:
+                      type: string
+                      format: datetime
+                      example: "2022-09-25T12:52:15"
+                    time_to_respond:
+                      type: string
+                      format: datetime
+                      example: "2022-09-25T12:52:15"
+                    time_to_resolve_sla:
+                      type: boolean
+                      example: true
+                    time_to_respond_sla:
+                      type: boolean
+                      example: true

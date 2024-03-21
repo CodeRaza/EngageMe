@@ -1,0 +1,11 @@
+<p><b>Source Incident No: </b>{{ ticket.source_incident_no }}</p>
+<p><b>Status: </b>{{ ticket.status.value }}</p>
+<p><b>Fault Description: </b>{{ ticket.fault_description.value }}</p>
+{% if ticket.resolution %}
+<p><b>Resolution: </b>{{ ticket.resolution.value }}</p>
+{% endif %}
+<p><b>Comment: </b>{{ ticket.comments }}</p>
+</br>
+</br>
+</br>
+<p>IMS Support Team</p>
