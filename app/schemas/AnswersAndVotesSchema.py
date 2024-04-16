@@ -1,11 +1,11 @@
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from marshmallow import fields, post_dump, validate
 from datetime import datetime, timedelta
-from app.models.LectureSubtopic import LectureSubtopic
+from app.models.AnswersAndVotes import AnswersAndVotes
 
 
-class LectureSubtopicSchema(SQLAlchemyAutoSchema):
+class AnswersAndVotesSchema(SQLAlchemyAutoSchema):
     class Meta:
-        model = LectureSubtopic
+        model = AnswersAndVotes
         include_fk = True
 

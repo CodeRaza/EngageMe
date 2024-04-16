@@ -69,6 +69,6 @@ def create_app():
 
 def create_tables_and_add_user():
     db.create_all()
-    db.session.add(User(username="teacher@gmail.com",password=guard.hash_password("password"),role="teacher"))
-    db.session.add(User(username="student@gmail.com",password=guard.hash_password("password"),role="student"))
+    db.session.add(User(email="teacher@gmail.com",password=guard.hash_password("password"),role="teacher"))
+    db.session.add(User(email="student@gmail.com",password=guard.hash_password("password"),role="student"))
     db.session.commit()

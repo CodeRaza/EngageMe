@@ -24,5 +24,8 @@ class Lecture(db.Model):
     subtopics = db.relationship(
         "LectureSubtopic", back_populates="lecture"
     )
+    questions_and_polls = db.relationship(
+        "QuestionsAndPolls", back_populates="lecture"
+    )
 
 

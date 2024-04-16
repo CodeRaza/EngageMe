@@ -51,7 +51,8 @@ def login(args):
     user = guard.authenticate(username, password)
     ret = {
         'access_token': guard.encode_jwt_token(user),
-        'role': user.role
+        'role': user.role,
+        'id' : user.id
         }
     return ret, 200
 

@@ -32,7 +32,7 @@ class User(db.Model):
 
     @classmethod
     def lookup(cls, username):
-        return cls.query.filter_by(username=username).one_or_none()
+        return cls.query.filter_by(email=username).one_or_none()
 
     @classmethod
     def identify(cls, id):
@@ -40,7 +40,7 @@ class User(db.Model):
 
     def get_reset_token(self, expires=500):
         return jwt.encode( {
-                            'reset_password': self.username,
+                            'reset_password': self.email,
                             'exp': datetime.now(tz=timezone.utc)+timedelta(seconds=500)
                         },
                         config.MAIL_SECRET_KEY,

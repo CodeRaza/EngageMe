@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify
 from sqlalchemy import func, or_, extract, and_
 import flask_praetorian
 from http import HTTPStatus
@@ -12,6 +12,13 @@ from app.schemas.LectureSchema import LectureSchema
 from app.models.Lecture import Lecture
 from app.schemas.LectureSubtopicSchema import LectureSubtopicSchema
 from app.models.LectureSubtopic import LectureSubtopic
+from app.schemas.QuestionsAndPollsSchema import QuestionsAndPollsSchema
+from app.models.QuestionsAndPolls import QuestionsAndPolls
+from app.schemas.AnswersAndVotesSchema import AnswersAndVotesSchema
+from app.models.AnswersAndVotes import AnswersAndVotes
+from app.routes import guard
+import flask_praetorian
+import jwt
 
 bp = Blueprint("teacher", __name__)
 
@@ -41,8 +48,8 @@ def add_classroom(args):
     },
     location="query",
 )
-# @flask_praetorian.roles_accepted("teacher")
-# @flask_praetorian.auth_required
+@flask_praetorian.roles_accepted("teacher")
+@flask_praetorian.auth_required
 def get_classrooms(args):
     """
     GET API to add a Get all classroms for a teacher from database.
@@ -62,8 +69,8 @@ def get_classrooms(args):
     },
     location="query",
 )
-# @flask_praetorian.roles_accepted("teacher")
-# @flask_praetorian.auth_required
+@flask_praetorian.roles_accepted("teacher")
+@flask_praetorian.auth_required
 def delete_classroom(args):
     """
     DELETE API to delete a Classroom from database.
@@ -79,8 +86,8 @@ def delete_classroom(args):
 #################### Lecture ############################################
 @bp.route("/lecture", methods=["POST"])
 @use_args(LectureSchema, location="json")
-# @flask_praetorian.roles_accepted("teacher")
-# @flask_praetorian.auth_required
+@flask_praetorian.roles_accepted("teacher")
+@flask_praetorian.auth_required
 def add_lecture(args):
     """
     POST API to add a Lecture to database.
@@ -103,7 +110,7 @@ def add_lecture(args):
     location="query",
 )
 # @flask_praetorian.roles_accepted("teacher")
-# @flask_praetorian.auth_required
+@flask_praetorian.auth_required
 def get_lectures(args):
     """
     GET API to add a Get all lectures for a teacher from database.
@@ -124,7 +131,7 @@ def get_lectures(args):
     location="query",
 )
 # @flask_praetorian.roles_accepted("teacher")
-# @flask_praetorian.auth_required
+@flask_praetorian.auth_required
 def delete_lecture(args):
     """
     DELETE API to delete a lecture from database.
@@ -145,8 +152,8 @@ def delete_lecture(args):
 #################### Lecture Subtopic ############################################
 @bp.route("/subtopic", methods=["POST"])
 @use_args(LectureSubtopicSchema, location="json")
-# @flask_praetorian.roles_accepted("teacher")
-# @flask_praetorian.auth_required
+@flask_praetorian.roles_accepted("teacher")
+@flask_praetorian.auth_required
 def add_subtopic(args):
     """
     POST API to add a subtopic to database.
@@ -155,7 +162,7 @@ def add_subtopic(args):
     :response:  primary key for the record being added
                 with status 200.
     """
-    subtopic = Lecture(**args)
+    subtopic = LectureSubtopic(**args)
     db.session.add(subtopic)
     db.session.commit()
 
@@ -169,7 +176,7 @@ def add_subtopic(args):
     location="query",
 )
 # @flask_praetorian.roles_accepted("teacher")
-# @flask_praetorian.auth_required
+@flask_praetorian.auth_required
 def get_subtopics(args):
     """
     GET API to add a Get all subtopics for a lecture from database.
@@ -189,8 +196,8 @@ def get_subtopics(args):
     },
     location="query",
 )
-# @flask_praetorian.roles_accepted("teacher")
-# @flask_praetorian.auth_required
+@flask_praetorian.roles_accepted("teacher")
+@flask_praetorian.auth_required
 def delete_subtopic(args):
     """
     DELETE API to delete a lecture subtopic from database.
@@ -202,3 +209,120 @@ def delete_subtopic(args):
     db.session.commit()
     
     return jsonify({"message": "lecture subtopic deleted"}), HTTPStatus.OK
+
+
+#################### Lecture Subtopic ############################################
+
+
+#################### Questions/Polls ############################################
+
+@bp.route("/questions_and_polls", methods=["POST"])
+@use_args(QuestionsAndPollsSchema, location="json")
+@flask_praetorian.roles_accepted("teacher")
+@flask_praetorian.auth_required
+def add_questions_and_polls(args):
+    """
+    """
+    subtopic = QuestionsAndPolls(**args)
+    db.session.add(subtopic)
+    db.session.commit()
+
+    return {"id": subtopic.id, "message": "Added"}
+
+@bp.route("/questions_and_polls", methods=["GET"])
+@use_args(
+    {
+        "lecture_id": fields.Integer(required=False, missing=None),
+    },
+    location="query",
+)
+# @flask_praetorian.roles_accepted("teacher")
+@flask_praetorian.auth_required
+def get_questions_and_polls(args):
+    """
+    """
+    subtopics = db.session.query(QuestionsAndPolls).filter(QuestionsAndPolls.lecture_id==args.get("lecture_id")).all()
+    schema = QuestionsAndPollsSchema(many=True)
+    result = schema.dump(subtopics)
+    
+    return (jsonify(result), HTTPStatus.OK)
+
+
+#################### Questions/Polls ############################################
+
+#################### Answers/Votes ############################################
+
+@bp.route("/answer_and_votes", methods=["POST"])
+@use_args(AnswersAndVotesSchema, location="json")
+@flask_praetorian.roles_accepted("student")
+@flask_praetorian.auth_required
+def add_answer_and_votes(args):
+    """
+    """
+    subtopic = AnswersAndVotes(**args)
+    db.session.add(subtopic)
+    db.session.commit()
+
+    return {"id": subtopic.id, "message": "Added"}
+
+@bp.route("/answer_and_votes", methods=["GET"])
+@use_args(
+    {
+        "lecture_id": fields.Integer(required=False, missing=None),
+    },
+    location="query",
+)
+# @flask_praetorian.roles_accepted("teacher")
+@flask_praetorian.auth_required
+def get_answer_and_votes(args):
+    """
+    """
+    subtopics = db.session.query(AnswersAndVotes).filter(AnswersAndVotes.lecture_id==args.get("lecture_id")).all()
+    schema = AnswersAndVotesSchema(many=True)
+    result = schema.dump(subtopics)
+    
+    return (jsonify(result), HTTPStatus.OK)
+
+
+#################### Answers/Votes ############################################
+
+
+#################### Join lecture ############################################
+
+@bp.route("/create_lecture_link", methods=["GET"])
+@use_args(
+    {
+        "lecture_id": fields.Integer(required=False, missing=None),
+    },
+    location="query",
+)
+@flask_praetorian.roles_accepted("teacher")
+@flask_praetorian.auth_required
+def create_lecture_link(args):
+    """
+    """
+    token = jwt.encode(args.get("lecture_id"))
+    
+    return (jsonify({token:token}), HTTPStatus.OK)
+
+@bp.route("/join_lecture", methods=["GET"])
+@use_args(
+    {
+        "token": fields.Integer(required=False, missing=None),
+    },
+    location="query",
+)
+# @flask_praetorian.roles_accepted("teacher")
+@flask_praetorian.auth_required
+def join_lecture(args):
+    """
+    """
+    token = jwt.decode(args.get("token"), "test")
+    lecture_id = db.session.query(Lecture.classroom_id).filter(Lecture.id==token.first())
+    breakpoint()
+    user_id = flask_praetorian.current_user().id
+    
+    return (jsonify("result"), HTTPStatus.OK)
+
+
+#################### Join lecture ############################################
