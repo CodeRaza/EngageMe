@@ -17,6 +17,7 @@ class StudentQuestion(db.Model):
         nullable=False
     )
     question = db.Column(db.Text, nullable=False)
+    anonymous = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.now())
 
     lecture = db.relationship(

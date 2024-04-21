@@ -20,6 +20,8 @@ from app.schemas.AnswersAndVotesSchema import AnswersAndVotesSchema
 from app.models.AnswersAndVotes import AnswersAndVotes
 from app.schemas.LectureReviewSchema import LectureReviewSchema
 from app.models.LectureReview import LectureReview
+from app.schemas.StudentQuestionSchema import StudentQuestionSchema
+from app.models.StudentQuestion import StudentQuestion
 import flask_praetorian
 import random
 import string
@@ -111,6 +113,7 @@ def add_lecture(args):
     {
         "classroom_id": fields.Integer(required=False, missing=None),
         "lecture_id": fields.Integer(required=False, missing=None),
+        "student_id": fields.Integer(required=False, missing=None),
     },
     location="query",
 )
@@ -129,6 +132,19 @@ def get_lectures(args):
     if args.get("lecture_id"):
         lectures = lectures.filter(Lecture.id==args.get("lecture_id")).first()
         schema = LectureSchema(many=False)
+    if args.get("student_id"):
+        student = User.query.filter_by(id=args.get("student_id")).first()
+
+        lectures = []
+        if student:
+            # Access the student_classrooms relationship to get all classrooms
+            classrooms = student.student_classrooms
+
+            # Iterate through each classroom and get all lectures associated with it
+            for classroom in classrooms:
+                classroom_lectures = classroom.lectures
+                lectures.extend(classroom_lectures)
+        schema = LectureSchema(many=True)
     result = schema.dump(lectures)
     
     return (jsonify(result), HTTPStatus.OK)
@@ -288,6 +304,7 @@ def add_answer_and_votes(args):
 @use_args(
     {
         "lecture_id": fields.Integer(required=False, missing=None),
+        "student_id": fields.Integer(required=False, missing=None),
     },
     location="query",
 )
@@ -296,8 +313,15 @@ def add_answer_and_votes(args):
 def get_answer_and_votes(args):
     """
     """
-    subtopics = db.session.query(AnswersAndVotes).filter(AnswersAndVotes.lecture_id==args.get("lecture_id")).all()
-    schema = AnswersAndVotesSchema(many=True)
+    subtopics = db.session.query(QuestionsAndPolls).filter(QuestionsAndPolls.lecture_id == args.get("lecture_id")).filter(
+            db.session.query(AnswersAndVotes)
+            .filter(
+                AnswersAndVotes.questions_and_polls_id == QuestionsAndPolls.id,
+                AnswersAndVotes.student_id == flask_praetorian.current_user().id
+            )
+            .exists()
+    ).all()
+    schema = QuestionsAndPollsSchema(many=True)
     result = schema.dump(subtopics)
     
     return (jsonify(result), HTTPStatus.OK)
@@ -429,3 +453,40 @@ def get_lecture_review(args):
 
 
 #################### Lecture Review ############################################
+
+#################### Student Question ############################################
+
+@bp.route("/student_question", methods=["POST"])
+@use_args(StudentQuestionSchema, location="json")
+@flask_praetorian.roles_accepted("student")
+@flask_praetorian.auth_required
+def add_student_question(args):
+    """
+    """
+    student_question = StudentQuestion(**args)
+    db.session.add(student_question)
+    db.session.commit()
+
+
+    return {"id": student_question.id, "message": "Added"}
+
+@bp.route("/student_question", methods=["GET"])
+@use_args(
+    {
+        "lecture_id": fields.Integer(required=False, missing=None),
+        "student_id": fields.Integer(required=False, missing=None),
+    },
+    location="query",
+)
+@flask_praetorian.auth_required
+def get_student_question(args):
+    """
+    """
+    student_question = db.session.query(StudentQuestion).filter(and_(StudentQuestion.lecture_id == args.get("lecture_id"), StudentQuestion.student_id == args.get("student_id"))).all()
+    schema = StudentQuestionSchema(many=True)
+    result = schema.dump(student_question)
+    
+    return (jsonify(result), HTTPStatus.OK)
+
+
+#################### Student Question ############################################

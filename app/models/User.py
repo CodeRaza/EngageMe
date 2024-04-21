@@ -32,6 +32,16 @@ class User(db.Model):
     student_questions = db.relationship(
         "StudentQuestion", back_populates="student"
     )
+    moderations_as_teacher = db.relationship(
+        "Moderation",
+        back_populates="teacher",
+        foreign_keys="[Moderation.teacher_id]"
+    )
+    moderations_as_student = db.relationship(
+        "Moderation",
+        back_populates="student",
+        foreign_keys="[Moderation.student_id]"
+    )
 
     @property
     def rolenames(self):
