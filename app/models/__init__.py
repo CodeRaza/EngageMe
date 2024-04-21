@@ -8,4 +8,6 @@ from app.models import LectureMaterial
 from app.models import LectureSubtopic
 from app.models import QuestionsAndPolls
 from app.models import AnswersAndVotes
+from app.models import LectureReview
+from app.models import StudentQuestion
 

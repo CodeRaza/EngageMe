@@ -22,6 +22,16 @@ class User(db.Model):
         secondary=classroom_students,
         back_populates="students"
     )
+    answers_and_votes = db.relationship(
+        "AnswersAndVotes",
+        back_populates="student"
+    )
+    lecture_reviews = db.relationship(
+        "LectureReview", back_populates="student"
+    )
+    student_questions = db.relationship(
+        "StudentQuestion", back_populates="student"
+    )
 
     @property
     def rolenames(self):

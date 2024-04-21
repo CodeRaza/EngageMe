@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from flask import Blueprint, jsonify
-from sqlalchemy import func, or_, extract, and_
+from sqlalchemy import func, or_, extract, and_, not_
 import flask_praetorian
 from http import HTTPStatus
 from webargs.flaskparser import use_args
@@ -8,6 +8,8 @@ from webargs import fields
 from app.models import db
 from app.schemas.ClassroomSchema import ClassroomSchema
 from app.models.Classroom import Classroom
+from app.models.User import User
+from app.models.Classroom import classroom_students
 from app.schemas.LectureSchema import LectureSchema
 from app.models.Lecture import Lecture
 from app.schemas.LectureSubtopicSchema import LectureSubtopicSchema
@@ -16,9 +18,11 @@ from app.schemas.QuestionsAndPollsSchema import QuestionsAndPollsSchema
 from app.models.QuestionsAndPolls import QuestionsAndPolls
 from app.schemas.AnswersAndVotesSchema import AnswersAndVotesSchema
 from app.models.AnswersAndVotes import AnswersAndVotes
-from app.routes import guard
+from app.schemas.LectureReviewSchema import LectureReviewSchema
+from app.models.LectureReview import LectureReview
 import flask_praetorian
-import jwt
+import random
+import string
 
 bp = Blueprint("teacher", __name__)
 
@@ -106,6 +110,7 @@ def add_lecture(args):
 @use_args(
     {
         "classroom_id": fields.Integer(required=False, missing=None),
+        "lecture_id": fields.Integer(required=False, missing=None),
     },
     location="query",
 )
@@ -117,8 +122,13 @@ def get_lectures(args):
     :param: classroom_id
     :response: List of lecture dicts
     """
-    lectures = db.session.query(Lecture).filter(Lecture.classroom_id==args.get("classroom_id")).all()
-    schema = LectureSchema(many=True)
+    lectures = db.session.query(Lecture)
+    if args.get("classroom_id"):
+        lectures = lectures.filter(Lecture.classroom_id==args.get("classroom_id")).all()
+        schema = LectureSchema(many=True)
+    if args.get("lecture_id"):
+        lectures = lectures.filter(Lecture.id==args.get("lecture_id")).first()
+        schema = LectureSchema(many=False)
     result = schema.dump(lectures)
     
     return (jsonify(result), HTTPStatus.OK)
@@ -126,7 +136,7 @@ def get_lectures(args):
 @bp.route("/lecture", methods=["DELETE"])
 @use_args(
     {
-        "lecture_id": fields.Integer(required=False, missing=None),
+        "lecture_id": fields.Integer(required=True),
     },
     location="query",
 )
@@ -171,7 +181,7 @@ def add_subtopic(args):
 @bp.route("/subtopic", methods=["GET"])
 @use_args(
     {
-        "lecture_id": fields.Integer(required=False, missing=None),
+        "lecture_id": fields.Integer(required=False),
     },
     location="query",
 )
@@ -241,7 +251,16 @@ def add_questions_and_polls(args):
 def get_questions_and_polls(args):
     """
     """
-    subtopics = db.session.query(QuestionsAndPolls).filter(QuestionsAndPolls.lecture_id==args.get("lecture_id")).all()
+    subtopics = db.session.query(QuestionsAndPolls).filter(QuestionsAndPolls.lecture_id == args.get("lecture_id")).filter(
+        not_(
+            db.session.query(AnswersAndVotes)
+            .filter(
+                AnswersAndVotes.questions_and_polls_id == QuestionsAndPolls.id,
+                AnswersAndVotes.student_id == flask_praetorian.current_user().id
+            )
+            .exists()
+        )
+    ).all()
     schema = QuestionsAndPollsSchema(many=True)
     result = schema.dump(subtopics)
     
@@ -299,16 +318,25 @@ def get_answer_and_votes(args):
 @flask_praetorian.roles_accepted("teacher")
 @flask_praetorian.auth_required
 def create_lecture_link(args):
-    """
-    """
-    token = jwt.encode(args.get("lecture_id"))
+    lecture_id = args.get("lecture_id")
     
-    return (jsonify({token:token}), HTTPStatus.OK)
+    # Check if lecture_id is provided
+    if lecture_id is None:
+        return jsonify({"error": "lecture_id is required"}), HTTPStatus.BAD_REQUEST
+    
+    # Encode lecture_id as ASCII and append three randomly generated characters
+    random_chars = ''.join(random.choices(string.ascii_uppercase + string.digits, k=3))
+    encoded_id = str(lecture_id) + random_chars
+    
+    # Decode the lecture_id by removing the last three characters and converting ASCII to number
+    decoded_id = int(encoded_id[:-3])
+    
+    return jsonify({"encoded_id": encoded_id, "decoded_id": decoded_id}), HTTPStatus.OK
 
 @bp.route("/join_lecture", methods=["GET"])
 @use_args(
     {
-        "token": fields.Integer(required=False, missing=None),
+        "token": fields.String(required=False, missing=None),
     },
     location="query",
 )
@@ -317,12 +345,87 @@ def create_lecture_link(args):
 def join_lecture(args):
     """
     """
-    token = jwt.decode(args.get("token"), "test")
-    lecture_id = db.session.query(Lecture.classroom_id).filter(Lecture.id==token.first())
-    breakpoint()
+    encoded = args.get("token")
+    # Decode the lecture_id by removing the last three characters and converting ASCII to number
+    decoded_id = int(encoded[:-3])
+    
+    classroom_id = db.session.query(Lecture.classroom_id).filter(Lecture.id==decoded_id).first()
     user_id = flask_praetorian.current_user().id
     
-    return (jsonify("result"), HTTPStatus.OK)
+    user = db.session.query(User).filter(User.id==user_id).first()
+    classroom = db.session.query(Classroom).filter(Classroom.id==classroom_id[0]).first()
+    classroom.students.append(user)
+    db.session.commit()
+    
+    return (jsonify({
+        "lecture_id": decoded_id
+        }), HTTPStatus.OK)
 
 
 #################### Join lecture ############################################
+
+
+#################### Lecture Review ############################################
+
+@bp.route("/lecture_review", methods=["POST"])
+@use_args(LectureReviewSchema, location="json")
+@flask_praetorian.roles_accepted("student")
+@flask_praetorian.auth_required
+def add_lecture_review(args):
+    """
+    """
+    lecture_review_from_db = db.session.query(LectureReview).filter(and_(LectureReview.lecture_id == args.get("lecture_id"), LectureReview.student_id == args.get("student_id"))).first()
+    if not lecture_review_from_db:
+        lecture_review = LectureReview(**args)
+        db.session.add(lecture_review)
+        db.session.commit()
+    else:
+        for item in args.keys():
+            if item=="favorite_checked":
+                lecture_review_from_db.favorite_checked = args.get("favorite_checked")
+            elif item=="thumbsup_checked":
+                lecture_review_from_db.thumbsup_checked = args.get("thumbsup_checked")
+            elif item=="thumbsdown_checked":
+                lecture_review_from_db.thumbsdown_checked = args.get("thumbsdown_checked")
+            elif item=="confuse_checked":
+                lecture_review_from_db.confuse_checked = args.get("confuse_checked")
+            elif item=="cannot_hear_checked":
+                lecture_review_from_db.cannot_hear_checked = args.get("cannot_hear_checked")
+            elif item=="cannot_see_checked":
+                lecture_review_from_db.cannot_see_checked = args.get("cannot_see_checked")
+            elif item=="cannot_see_button_checked":
+                lecture_review_from_db.cannot_see_button_checked = args.get("cannot_see_button_checked")
+            elif item=="cannot_hear_button_checked":
+                lecture_review_from_db.cannot_hear_button_checked = args.get("cannot_hear_button_checked")
+            elif item=="needtorepeat_button_checked":
+                lecture_review_from_db.needtorepeat_button_checked = args.get("needtorepeat_button_checked")
+            elif item=="rate_content":
+                lecture_review_from_db.rate_content = args.get("rate_content")
+            elif item=="effectively_communicate":
+                lecture_review_from_db.effectively_communicate = args.get("effectively_communicate")
+            elif item=="examples_clear":
+                lecture_review_from_db.examples_clear = args.get("examples_clear")
+            db.session.commit()
+
+    return {"id": lecture_review_from_db.id, "message": "Added"}
+
+@bp.route("/lecture_review", methods=["GET"])
+@use_args(
+    {
+        "lecture_id": fields.Integer(required=False, missing=None),
+        "student_id": fields.Integer(required=False, missing=None),
+    },
+    location="query",
+)
+@flask_praetorian.auth_required
+def get_lecture_review(args):
+    """
+    """
+    lecture_review_from_db = db.session.query(LectureReview).filter(and_(LectureReview.lecture_id == args.get("lecture_id"), LectureReview.student_id == args.get("student_id"))).first()
+    schema = LectureReviewSchema(many=False)
+    result = schema.dump(lecture_review_from_db)
+    
+    return (jsonify(result), HTTPStatus.OK)
+
+
+#################### Lecture Review ############################################

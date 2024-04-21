@@ -13,6 +13,7 @@ class Lecture(db.Model):
     )
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=True)
+    live = db.Column(db.Boolean, nullable=True, default=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.now())
 
     classroom = db.relationship(
@@ -26,6 +27,12 @@ class Lecture(db.Model):
     )
     questions_and_polls = db.relationship(
         "QuestionsAndPolls", back_populates="lecture"
+    )
+    lecture_reviews = db.relationship(
+        "LectureReview", back_populates="lecture"
+    )
+    student_questions = db.relationship(
+        "StudentQuestion", back_populates="lecture"
     )
 
 

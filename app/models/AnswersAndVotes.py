@@ -11,6 +11,11 @@ class AnswersAndVotes(db.Model):
         db.ForeignKey("questions_and_polls.id"),
         nullable=False
     )
+    student_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id"),
+        nullable=False
+    )
     anonymous = db.Column(db.Boolean, default=False)
     type = db.Column(db.String(255), nullable=False)
     answer = db.Column(db.Text, nullable=False)
@@ -20,4 +25,8 @@ class AnswersAndVotes(db.Model):
     question_and_poll = db.relationship(
         "QuestionsAndPolls", back_populates="answers_and_votes"
     )
+    student = db.relationship(
+        "User", back_populates="answers_and_votes"
+    )
+    
     
