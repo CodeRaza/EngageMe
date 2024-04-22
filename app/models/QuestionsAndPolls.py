@@ -21,6 +21,6 @@ class QuestionsAndPolls(db.Model):
         "Lecture", back_populates="questions_and_polls"
     )
     answers_and_votes = db.relationship(
-        "AnswersAndVotes", back_populates="question_and_poll"
+        "AnswersAndVotes", back_populates="question_and_poll", cascade="all, delete-orphan"
     )
     

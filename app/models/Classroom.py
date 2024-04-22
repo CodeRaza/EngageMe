@@ -41,5 +41,5 @@ class Classroom(db.Model):
         back_populates="student_classrooms",
     )
     lectures = db.relationship(
-        "Lecture", back_populates="classroom"
+        "Lecture", back_populates="classroom", cascade="all, delete-orphan"
     )

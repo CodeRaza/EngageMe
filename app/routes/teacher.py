@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from flask import Blueprint, jsonify
-from sqlalchemy import func, or_, extract, and_, not_
+from sqlalchemy import func, or_, extract, and_, not_, text
+import sqlalchemy
 import flask_praetorian
 from http import HTTPStatus
 from webargs.flaskparser import use_args
@@ -90,6 +91,29 @@ def delete_classroom(args):
     return jsonify({"message": "classroom deleted"}), HTTPStatus.OK
 
 #################### Lecture ############################################
+@bp.route("/lecture", methods=["PUT"])
+@use_args(
+    {
+        "lecture_id": fields.Integer(required=False, missing=None),
+        "live": fields.Boolean(required=False, missing=None),
+    },
+    location="query",
+)
+@flask_praetorian.roles_accepted("teacher")
+@flask_praetorian.auth_required
+def update_lecture(args):
+    """
+    POST API to add a Lecture to database.
+    :param: values for a single record to be added
+            in tickets table.
+    :response:  primary key for the record being added
+                with status 200.
+    """
+    lecture = db.session.query(Lecture).filter(Lecture.id==args.get("lecture_id")).first()
+    lecture.live = args.get("live")
+    db.session.commit()
+
+    return {"id": lecture.id, "message": "Lecture Updated"}
 @bp.route("/lecture", methods=["POST"])
 @use_args(LectureSchema, location="json")
 @flask_praetorian.roles_accepted("teacher")
@@ -250,6 +274,7 @@ def add_questions_and_polls(args):
     """
     """
     subtopic = QuestionsAndPolls(**args)
+    subtopic.uploaded_at = datetime.now()
     db.session.add(subtopic)
     db.session.commit()
 
@@ -267,7 +292,13 @@ def add_questions_and_polls(args):
 def get_questions_and_polls(args):
     """
     """
-    subtopics = db.session.query(QuestionsAndPolls).filter(QuestionsAndPolls.lecture_id == args.get("lecture_id")).filter(
+    current_time = datetime.now()
+    expiration_time = func.datetime(QuestionsAndPolls.uploaded_at, '+' + func.cast(QuestionsAndPolls.expires_in, sqlalchemy.String) + ' minutes')
+
+    subtopics = db.session.query(QuestionsAndPolls).filter(
+        QuestionsAndPolls.lecture_id == args.get("lecture_id"),
+        expiration_time > current_time
+    ).filter(
         not_(
             db.session.query(AnswersAndVotes)
             .filter(

@@ -20,19 +20,19 @@ class Lecture(db.Model):
         "Classroom", back_populates="lectures"
     )
     materials = db.relationship(
-        "LectureMaterial", back_populates="lecture"
+        "LectureMaterial", back_populates="lecture", cascade="all, delete-orphan"
     )
     subtopics = db.relationship(
-        "LectureSubtopic", back_populates="lecture"
+        "LectureSubtopic", back_populates="lecture", cascade="all, delete-orphan"
     )
     questions_and_polls = db.relationship(
-        "QuestionsAndPolls", back_populates="lecture"
+        "QuestionsAndPolls", back_populates="lecture", cascade="all, delete-orphan"
     )
     lecture_reviews = db.relationship(
-        "LectureReview", back_populates="lecture"
+        "LectureReview", back_populates="lecture", cascade="all, delete-orphan"
     )
     student_questions = db.relationship(
-        "StudentQuestion", back_populates="lecture"
+        "StudentQuestion", back_populates="lecture", cascade="all, delete-orphan"
     )
 
 
