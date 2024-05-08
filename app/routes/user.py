@@ -114,6 +114,7 @@ def reset_password(args):
     "old_password": fields.String(required=True, allow_none=False),
     "new_password": fields.String(required=True, allow_none=False),
     }, location="json")
+
 def change_password(args):
 
     username =flask_praetorian.current_user().username

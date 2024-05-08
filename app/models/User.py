@@ -1,12 +1,12 @@
 from app.models import db
 import app.config as config
-import jwt
-from datetime import datetime,timedelta,timezone
-from app.models.Classroom import classroom_students
+from datetime import datetime, timedelta
+import jwt 
+from time import timezone 
 
 class User(db.Model):
     __tablename__ = "user"
-    __tableargs__ = {"schema": config.DB_NAME}
+    __table_args__ = {"schema": config.DB_NAME}
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=True)
     username = db.Column(db.String(255), unique=True)
@@ -19,7 +19,7 @@ class User(db.Model):
     )
     student_classrooms = db.relationship(
         "Classroom",
-        secondary=classroom_students,
+        secondary='classroom_students',
         back_populates="students"
     )
     answers_and_votes = db.relationship(
@@ -42,7 +42,13 @@ class User(db.Model):
         back_populates="student",
         foreign_keys="[Moderation.student_id]"
     )
-
+    shared_resources = db.relationship(
+        "Resource",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        overlaps="shared_resources"
+    )
+    
     @property
     def rolenames(self):
         try:

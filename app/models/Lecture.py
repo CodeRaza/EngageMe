@@ -4,8 +4,10 @@ import datetime
 
 class Lecture(db.Model):
     __tablename__ = "lecture"
-    __tableargs__ = {"schema": config.DB_NAME}
+    __table_args__ = {"schema": config.DB_NAME}  
     id = db.Column(db.Integer, primary_key=True)
+    attendance = db.relationship('Attendance', back_populates='lecture', uselist=False)  # Define the relationship with uselist=False
+
     classroom_id = db.Column(
         db.Integer,
         db.ForeignKey("classroom.id"),
@@ -34,5 +36,8 @@ class Lecture(db.Model):
     student_questions = db.relationship(
         "StudentQuestion", back_populates="lecture", cascade="all, delete-orphan"
     )
-
-
+    shared_resources = db.relationship(
+        "Resource",
+        back_populates="lecture",
+        cascade="all, delete-orphan"
+    )
